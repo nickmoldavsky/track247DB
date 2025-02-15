@@ -1,0 +1,22 @@
+{
+    "build": {
+      "preview": {
+        "android": {
+          "buildType": "apk"
+        },
+        "env": {
+          "EXPO_PUBLIC_API_URL": "https://parcelsapp.com/api/v3/shipments/tracking",
+          "EXPO_PUBLIC_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiIzMjUwMDk3MC1mZDNhLTExZWQtYjViZC03MTg2YTk3NzRiOTEiLCJzdWJJZCI6IjY0NzMxZjBmNzNkMGJiNTE5NzllNmJmYiIsImlhdCI6MTY4NTI2NjE5MX0.w4gvxSgOOWM1gsUoKcqR-pTJAWPqjSFPmv7TV_-urCs"
+        }
+      },
+      "preview2": {
+        "android": {
+          "gradleCommand": ":app:assembleRelease"
+        }
+      },
+      "preview3": {
+        "developmentClient": true
+      },
+      "production": {}
+    }
+  }
