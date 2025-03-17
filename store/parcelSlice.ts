@@ -34,7 +34,7 @@ const initialState: IParcelState = {
   items: [],
   isLoading: false,
   error: false,
-  updateStateFlag: false,
+  updateStateFlag: true,
 };
 
 const randomRgb = () => {
@@ -405,7 +405,7 @@ export const parcelSlice = createSlice({
     });
     builder.addCase(addParcelToDb.fulfilled, (state, action) => {
       console.log(
-        "builder.addCase(getTracksByUserId.fulfilled",
+        "builder.addCase(add parcel.fulfilled",
         action.payload
       );
       state.isLoading = false;

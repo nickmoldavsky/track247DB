@@ -28,8 +28,11 @@ export interface ISettingsState {
   orderBy: string;
   theme: string;
   language: string;
+  pushNotifications: boolean;
   location: string;
   deviceId: string;
   pushToken: string;
   accessToken: string;
+  loading: boolean;
+  error: (boolean | string);
 }

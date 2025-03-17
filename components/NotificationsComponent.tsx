@@ -12,9 +12,9 @@ import { AppTheme } from "../styled/theme";
 import { IParcel, IRequestParams } from "../interfaces/parcel";
 import { getPackageInfo, checkTrackingStatus } from "../store/parcelSlice";
 import { RootState } from "../store/store";
-import { useAppDispatch } from "../hooks/redux";
+import { useAppSelector, useAppDispatch } from "../hooks/redux"; //redux types
 import { store } from "../store/store";
-import { setPushToken } from "../store/settingsSlice";
+import { setPushToken, togglePushNotifications } from "../store/settingsSlice";
 //i18n
 import i18n from "../i18n/i18n";
 
@@ -54,21 +54,21 @@ const askNotification = async () => {
   if (Device.isDevice && status === "granted") {
     console.log("Notification permissions granted.", status);
     const grantedToken = store.getState().settings.pushToken;
-    console.log('notificationComponent/current push token:', grantedToken);
-    if(!grantedToken){
+    console.log("notificationComponent/current push token:", grantedToken);
+    if (!grantedToken) {
       let token = await Notifications.getExpoPushTokenAsync({
         projectId: Constants.expoConfig?.extra?.eas?.projectId,
       });
-      if(token) {
+      if (token) {
         console.log("new push token:", token);
         store.dispatch(setPushToken(token.data));
       }
     }
-    
+
     if (Platform.OS === "android") {
       Notifications.setNotificationChannelAsync("default", {
         name: "default",
-        importance: Notifications.AndroidImportance.MAX
+        importance: Notifications.AndroidImportance.MAX,
       });
     }
   } else {
@@ -79,18 +79,18 @@ const askNotification = async () => {
 const NotificationsComponent: React.FC = () => {
   let token: string;
   const dispatch = useAppDispatch();
-  const items = useSelector((state: RootState) => state.parcel.items);
-  const { theme, language, location, pushToken } = useSelector(
-    (state: RootState) => state.settings
-  );
+  const { uid } = useAppSelector((state) => state.user);
+  const items = useAppSelector((state: RootState) => state.parcel.items);
+  const { theme, language, location, pushToken, pushNotifications } =
+    useSelector((state: RootState) => state.settings);
   // Constructing styles for current theme
   const styles: any = useMemo(() => createStyles(theme), [theme]);
   const [isEnabled, setIsEnabled] = useState<boolean>(false);
-  const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
+  //const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
   const [selectedLanguage, setSelectedLanguage] = useState<string>();
   //const [itemsCounter, setItemsCounter] = useState<number>(0);
   const INDEX = 0;
-  const [isRegistered, setIsRegistered] = useState<boolean>(false);
+  const [isRegistered, setIsRegistered] = useState<boolean>();
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
@@ -104,6 +104,10 @@ const NotificationsComponent: React.FC = () => {
     return () => listener.remove();
   }, []);
 
+  useEffect(() => {
+    setIsRegistered(pushNotifications);
+  }, [pushNotifications]);
+
   const checkStatusAsync = async () => {
     const status = await BackgroundFetch.getStatusAsync();
     const isRegistered = await TaskManager.isTaskRegisteredAsync(
@@ -114,16 +118,23 @@ const NotificationsComponent: React.FC = () => {
   };
 
   const toggleFetchTask = async () => {
+    if (!pushToken) {
+      askNotification();
+    }
+    const data = {
+      id: uid,
+      flag: !pushNotifications,
+    };
+    //alert(isRegistered); return;
+    dispatch(togglePushNotifications(data));
+    //setIsRegistered(!isRegistered);
+
     if (isRegistered) {
       //await unregisterBackgroundFetchAsync();
-      //TODO: turn on push notification
-      // dispatch(togglePushNotifications());
     } else {
       //await registerBackgroundFetchAsync();
-      //TODO: turn off push notification
-      // dispatch(togglePushNotifications());
     }
-    checkStatusAsync();
+    //checkStatusAsync();
   };
 
   //notifications loop
@@ -229,7 +240,7 @@ const NotificationsComponent: React.FC = () => {
           thumbColor={isEnabled ? "#2C6BED" : "#f4f3f4"}
           ios_backgroundColor="#3e3e3e"
           onValueChange={toggleFetchTask}
-          value={isRegistered}
+          value={pushNotifications}
         />
       </View>
       <View style={styles.separator} />

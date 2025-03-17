@@ -5,6 +5,7 @@ import React, {
   useLayoutEffect,
   ReactPropTypes,
   useRef,
+  MutableRefObject,
 } from "react";
 import {
   SafeAreaView,
@@ -39,6 +40,7 @@ import {
   updateParcel,
   getTracksByUserId,
   updateParcelInDb,
+  resetItems,
 } from "../store/parcelSlice";
 //interfaces
 import { IParcel } from "../interfaces/parcel";
@@ -49,6 +51,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack/lib/types
 import { RootStackParamList, UpdateParcelParams } from "../types/types";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
 import ParcelListItem from "../components/ParcelListItemComponent";
+import { logOut } from "../store/userSlice";
 
 type HomeProps = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -60,6 +63,7 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
   const [isEditModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [itemData, setItemData] = useState<IParcel>();
   const [activeTab, setActiveTab] = useState<string>("");
+  const firstUpdate: MutableRefObject<boolean> = useRef(true);
   //TODO delete it
   //const [modal, setModal] = useState({ action: "", value: "", visible: false });
   //store
@@ -112,24 +116,12 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
     });
   }, [theme]);
 
-  // useEffect(() => {
-  //   if(isFocused && updateStateFlag) {
-  //     alert('main');
-  //     if (uid) {
-  //       dispatch(getTracksByUserId(uid));
-  //     }
-  //   }
-    
-  // }, [isFocused]);
-
-  // useEffect(() => {
-  //   setData();
-  //   clearParams();
-  // }, [updateStateFlag]);
-
   useEffect(() => {
-    tabFilterFunction("active");
-  }, [masterDataSource]);
+    //dispatch(resetItems());
+    //dispatch(logOut());
+    //console.log("uid:", uid);
+    //fetchData();
+  }, []);
 
   useEffect(() => {
     //user accsess control
@@ -141,28 +133,29 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
 
     if (isFocused) {
       dispatch(setErrorStateFlag(false));
-      if (updateStateFlag) {
-        setData();
+      if (updateStateFlag || firstUpdate.current) {
+        firstUpdate.current = false;
+        fetchData();
         clearParams();
       }
     } else {
-      
+
     }
     return () => {
       closeEditModal();
     };
   }, [isFocused, uid]);
 
-  // test db
   useEffect(() => {
-    console.log("HomeScreen/items:", items);
-    setMasterDataSource(items);
-  }, [items]);
+    tabFilterFunction("active");
+  }, [masterDataSource]);
 
-  //test db
+  //fetch items from db
   const fetchData = async () => {
     if (uid) {
-      return dispatch(getTracksByUserId(uid));
+      const data = await dispatch(getTracksByUserId(uid));
+      console.log("fetchData data:", data.payload.tracks[0]);
+      setMasterDataSource(data.payload.tracks[0]);
     }
   };
   //
@@ -225,8 +218,8 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
       // Filter the masterDataSource and update FilteredDataSource
       const newData = masterDataSource.filter(function (item: IParcel) {
         // Applying filter for the inserted text in search bar
-        const itemData = item.track_title
-          ? item.track_title.toUpperCase()
+        const itemData = item?.track_title
+          ? item?.track_title.toUpperCase()
           : "".toUpperCase();
         const textData = text.toUpperCase();
         return itemData.indexOf(textData) > -1;
@@ -306,7 +299,7 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
       action: "UPDATE_STATUS",
       status,
     };
-    console.log('home/updateParcel params', params);
+    console.log("home/updateParcel params", params);
     dispatch(editParcel(params));
     dispatch(updateParcelInDb(params));
     //TODO: update status in db
@@ -405,7 +398,7 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
 
         <FlatList
           data={[...filteredDataSource].sort((a, b) => {
-            return a.track_title?.localeCompare(b.status);
+            return a.track_title?.localeCompare(b?.status);
           })}
           //data={items}
           keyExtractor={(item, index) => index.toString()}
@@ -443,7 +436,7 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
         <Pressable style={styles.upper} onPress={closeEditModal} />
         <View style={styles.lower}>
           <Text style={styles.modalTitle}>
-            {itemData?.track_title} {itemData?.trackingNumber}
+            {itemData?.track_title} {itemData?.track_id}
           </Text>
           <Pressable
             style={styles.row}

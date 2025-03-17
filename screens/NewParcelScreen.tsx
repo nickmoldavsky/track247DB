@@ -69,7 +69,7 @@ const NewParcelScreen: React.FC = ({
     input.current.focus();
   }, []);
 
-  const addNewParcel = (action = "add") => {
+  const addNewParcel = async (action = "add") => {
     if (!inputTrackNumber) {
       input.current?.shake();
       return;
@@ -87,14 +87,11 @@ const NewParcelScreen: React.FC = ({
         track_id: inputTrackNumber,
         track_title: inputTrackTitle,
         push_token: pushToken,
-        status: 'transit',
+        status: '',
       }
       console.log('add parcel to db');
-      dispatch(addParcelToDb(addParcelToDbParams));
-      //return;
-      //
-
       dispatch(addParcel(payload));
+      await dispatch(addParcelToDb(addParcelToDbParams));
       
       //navigate to the main screen
       navigation.dispatch(StackActions.popToTop());

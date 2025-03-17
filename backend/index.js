@@ -6,12 +6,7 @@ const puppeteer = require("puppeteer");
 const request = require("request");
 const cron = require("node-cron");
 const axios = require("axios");
-//const pool = require("./db");
-//import mysql from 'mysql2';
-
-//const PORT = process.env.PORT || 3000;
 const app = express();
-//app.use('/api/v2/trackInfo', proxy('www.track24.net'));
 app.use(express.urlencoded({ extended: false }));
 // Middleware to parse JSON in the request body
 app.use(express.json());
@@ -27,26 +22,6 @@ const connection = mysql.createPool({
   database: "track247",
   //database: "time360",
 });
-
-// const connection = mysql.createConnection({
-
-//   host: "localhost",
-//   port: "3306",
-//   user: "root",
-//   password: "q4t2fz",
-//   database: "track247",
-//   //database: "time360",
-// });
-
-//Connect to the MySQL database
-// connection.connect((err) => {
-//   if (err) {
-//     console.error("Error connecting to the database: " + err.stack);
-//     return;
-//   }
-
-//   console.log("Connected to the database as ID " + connection.threadId);
-// });
 
 ///////////////////////////////////////////////////////////////////////track24.7
 const EXPO_PUBLIC_API_URL = "https://parcelsapp.com/api/v3/shipments/tracking";
@@ -412,9 +387,6 @@ app.post("/api/v2/updateTrack", async (req, res) => {
     const [{ updatedId }] = await connection
       .promise()
       .query('UPDATE tracks SET ?, ?, ? WHERE track_id = ?', [{ status: status }, { delivered: deliveredFlag },{ last_status: JSON.stringify(last_status) }, track_id]);
-      // .query(
-      //   `UPDATE tracks SET status=${status}, states=${JSON.stringify(states)}, last_status=${JSON.stringify(last_status)} WHERE user_id=${user_id} AND track_id=${track_id}`
-      // );
     if (updatedId) {
       console.log("/api/v2/updateTrack updateTrack:", updatedId);
     }
@@ -437,7 +409,6 @@ app.post("/api/v2/updateTrackStatus", async (req, res) => {
     if(status === 'delivered') {
       deliveredFlag = 1;
     }
-
     const [{ updatedId }] = await connection
       .promise()
       .query('UPDATE tracks SET ?, ? WHERE id = ?', [{ status: status }, { delivered: deliveredFlag }, id]);
@@ -466,6 +437,29 @@ app.post("/api/v2/deleteTrack", async (req, res) => {
       .query(`DELETE FROM tracks WHERE id=${id}`);
     res.status(200).json({
       message: "Track Deleted",
+    });
+  } catch (err) {
+    console.log("error:", err);
+    res.status(500).json({
+      message: err,
+    });
+  }
+});
+
+//update push notification flag
+app.post("/api/v2/updatePushNotificationsFlag", async (req, res) => {
+  try {
+    const { id, flag } = req.body; // destruct to get all properties
+    console.log('update push notification flag', id);
+
+    const [{ updatedId }] = await connection
+      .promise()
+      .query('UPDATE users SET ? WHERE id = ?', [{ push_notifications: flag }, id]);
+    if (updatedId) {
+      console.log("/api/v2/updatePushNotificationsFlag updated user:", updatedId);
+    }
+    res.status(200).json({
+      data: flag,
     });
   } catch (err) {
     console.log("error:", err);
@@ -616,176 +610,5 @@ app.post("/api/v2/getUserData", (req, res) => {
 app.listen(5000, () => {
   console.log("Server started at 5000");
 });
-
-async function parseLogRocketBlogHome() {
-  // Launch the browser
-  const browser = await puppeteer.launch();
-
-  // Open a new tab
-  const page = await browser.newPage();
-
-  // Visit the page and wait until network connections are completed
-  await page.goto("https://track24.net/?code=UZ0627176106Y", {
-    waitUntil: "networkidle2",
-  });
-
-  //test
-  // Get the node and extract the text
-  //const titleNode = await page.$('h1');
-  //const title = await page.evaluate(el => el.innerText, titleNode);
-
-  // We can do both actions with one command
-  // In this case, extract the href attribute instead of the text
-  //const link = await page.$eval('a', anchor => anchor.getAttribute('href'));
-
-  //console.log({ title, link });
-
-  const titles = await page.evaluate(() => {
-    //return document.querySelectorAll("#trackingEvents");
-    return [...document.querySelectorAll("#trackingEvents")].map(
-      (el) => el.textContent
-    );
-  });
-  titles.forEach((element) => {
-    console.log("element:", element);
-  });
-  console.log("titles:::", titles);
-
-  // Get page data
-  const tracks = await page.evaluate(() => {
-    // Fetch the first element with class "quote"
-    // Get the displayed text and returns it
-    const trackingEvents = document.querySelectorAll("#trackingEvents");
-    console.log("trackingEvents???????????", trackingEvents);
-
-    // Convert the quoteList to an iterable array
-    // For each quote fetch the text and author
-    return Array.from(trackingEvents).map((trackingEvent, index) => {
-      // Fetch the sub-elements from the previously fetched quote element
-      // Get the displayed text and return it (`.innerText`)
-      const trackingInfoDetails = trackingEvent.querySelector(
-        ".trackingInfoDetails"
-      ).textContent;
-      const trackingInfoDateTime = trackingEvent.querySelector(
-        ".trackingInfoDateTime"
-      ).innerText;
-
-      return { trackingInfoDetails, trackingInfoDateTime, index };
-      //console.log('trackingEvent::::', trackingEvent.textContent);
-    });
-  });
-  //#test
-
-  // Interact with the DOM to retrieve the titles
-  // const titles = await page.evaluate(() => {
-  // Select all elements with crayons-tag class
-  // return [...document.querySelectorAll('#trackingEvents')].map(el => el.textContent);
-
-  //});
-
-  // Display the tracks
-  console.log(tracks);
-
-  // Don't forget to close the browser instance to clean up the memory
-  await browser.close();
-
-  // Print the results
-  //titles.forEach(title => console.log(`-- ${title}`));
-  //tracks.forEach(title => console.log(`-- ${trackingEvent}`));
-}
-
-////////////////////////////////////////////////////////////////////
-async function parseL(id) {
-  console.log("id:", id);
-  //UZ0627176106Y
-  //return;
-
-  const proxyServer = "1.248.219.25:8080";
-  const browser = await puppeteer.launch({
-    //headless: 'shell',
-    //args: ['--enable-gpu', '--no-sandbox', '--disable-setuid-sandbox', `--proxy-server=${proxyServer}`],
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"], //`--proxy-server=${proxyServer}`
-  });
-
-  //const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto("https://track24.net/?code=" + id, {
-    waitUntil: "networkidle2",
-    //waitUntil: "load",
-    //timeout: 0,
-  });
-
-  //const ip = await body.getProperty('textContent');
-  //console.log(await ip.jsonValue());
-
-  const data = await page.evaluate(() => {
-    const tds = Array.from(document.querySelectorAll(".trackingInfoRow"));
-    console.log("tds:", tds);
-    //return {tds};
-    return tds.map((div, index) => {
-      //const innerHTML = (div.innerHTML);
-      const trackingInfoDetails = {
-        operationAttribute: div.querySelector(".operationAttribute")
-          .textContent,
-        operationType: div.querySelector(".operationType").textContent,
-        operationPlace: div.querySelector(".operationPlace").textContent,
-      };
-      const trackingInfoDateTime = {
-        date: div.querySelector(".date").innerText,
-        time: div.querySelector(".time").innerText,
-      };
-      const courierLabel = div.querySelector(".label.label-info").innerText;
-
-      return { trackingInfoDetails, trackingInfoDateTime, courierLabel, index };
-      //return innerHTML.replace(/<a [^>]+>[^<]*<\/a>/g, '').trim();
-    });
-  });
-
-  console.log(data);
-  await browser.close();
-  return data;
-}
-
-//////////////////////////////////////////////////////////////////////
-
-async function parcelsapp(id) {
-  console.log("id:", id);
-  //UZ0627176106Y
-  //return;
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto("https://parcelsapp.com/en/tracking/" + id, {
-    waitUntil: "networkidle2",
-  });
-
-  const data = await page.evaluate(() => {
-    const tds = Array.from(document.querySelectorAll(".event"));
-    return tds.map((div, index) => {
-      //const innerHTML = (div.innerHTML);
-      const trackingInfoDetails = {
-        operationAttribute: div.querySelector(".event-content").innerText,
-        //operationType: div.querySelector(".operationType").innerText,
-        //operationPlace: div.querySelector(".operationPlace").innerText,
-      };
-      const trackingInfoDateTime = {
-        date: div.querySelector(".event-time").innerText,
-        time: div.querySelector(".event-time").innerText,
-      };
-      //const courierLabel = div.querySelector(".label.label-info").innerText;
-
-      return { trackingInfoDetails, trackingInfoDateTime, index };
-      //return innerHTML.replace(/<a [^>]+>[^<]*<\/a>/g, '').trim();
-    });
-  });
-
-  console.log(data);
-  await browser.close();
-  return data;
-}
-
-//parseL();
-//parcelsapp('RS1072416916Y');
-//parseLogRocketBlogHome();
 
 cron.schedule("0 * * * *", generatePushNotifications);
