@@ -194,7 +194,7 @@ const DetailsScreen: React.FC = ({ route, navigation }: DetailsScreenProps) => {
   const updateParcelInfo = (responseParcelInfo) => {
     setParcelInfo(responseParcelInfo);
     console.log('updateParcelInfo responseParcelInfo', responseParcelInfo.status);
-    items.find((item) => {  1§
+    items.find((item) => {
       if (item.track_id === responseParcelInfo.trackingId) {
         console.log("DetailsScreen/updateParcelInfo/item by trackingId:", item);
         if(item?.status !== responseParcelInfo.status && uid) {
