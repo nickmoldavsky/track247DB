@@ -14,9 +14,10 @@ import { getPackageInfo, checkTrackingStatus } from "../store/parcelSlice";
 import { RootState } from "../store/store";
 import { useAppSelector, useAppDispatch } from "../hooks/redux"; //redux types
 import { store } from "../store/store";
-import { setPushToken, togglePushNotifications } from "../store/settingsSlice";
+import { setPushToken, togglePushNotifications, setPushNotificationsToken } from "../store/settingsSlice";
 //i18n
 import i18n from "../i18n/i18n";
+import { MaterialCommunityIcons } from "@expo/vector-icons/";
 
 const BACKGROUND_FETCH_TASK = "background-fetch";
 let itemsCounter: number = 0;
@@ -47,22 +48,41 @@ const handleNotification = () => {
   console.log("ok! got your notification!");
 };
 
-const askNotification = async () => {
+const askNotification = async (uid, pushToken) => {
   // We need to ask for Notification permissions for ios devices
   const { status } = await Notifications.requestPermissionsAsync();
-  //TODO change: i didnt found isDevice property
   if (Device.isDevice && status === "granted") {
     console.log("Notification permissions granted.", status);
-    const grantedToken = store.getState().settings.pushToken;
-    console.log("notificationComponent/current push token:", grantedToken);
-    if (!grantedToken) {
-      let token = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
-      });
-      if (token) {
-        console.log("new push token:", token);
-        store.dispatch(setPushToken(token.data));
+    //const userId = await store.getState().user.uid;
+    console.log("notificationComponent/current push token:", pushToken);
+
+    if (!pushToken || pushToken === undefined) {
+      try {
+        const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+        if (!projectId) {
+          alert('Project ID not found');
+          throw new Error('Project ID not found');
+        }
+        const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+        if (token) {
+          console.log("new push token:", token);
+          store.dispatch(setPushToken(token));
+          //set push token in db
+          const data = {
+            id: uid,
+            token: token
+          }
+          store.dispatch(setPushNotificationsToken(data));
+        } else {
+          
+        }
+
+      } catch (error) {
+        //alert('catch Error retrieving Expo push token' + error);
+        console.error('Error retrieving Expo push token:', error);
       }
+    } else {
+  
     }
 
     if (Platform.OS === "android") {
@@ -72,6 +92,7 @@ const askNotification = async () => {
       });
     }
   } else {
+    alert("Notification permissions not granted!");
     console.log("Notification permissions not granted!", status);
   }
 };
@@ -94,8 +115,9 @@ const NotificationsComponent: React.FC = () => {
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
-    askNotification();
-    checkStatusAsync();
+    askNotification(uid, pushToken);
+    
+    //checkStatusAsync();
     // If we want to do something with the notification when the app
     // is active, we need to listen to notification events and
     // handle them in a callback
@@ -125,7 +147,6 @@ const NotificationsComponent: React.FC = () => {
       id: uid,
       flag: !pushNotifications,
     };
-    //alert(isRegistered); return;
     dispatch(togglePushNotifications(data));
     //setIsRegistered(!isRegistered);
 
@@ -230,11 +251,13 @@ const NotificationsComponent: React.FC = () => {
       </View> */}
 
       <View style={styles.row}>
-        <Text style={styles.text}>
-          {isRegistered
-            ? i18n.t("DISABLE_PUSH_NOTIFICATION")
-            : i18n.t("ENABLE_PUSH_NOTIFICATION")}
-        </Text>
+      <MaterialCommunityIcons
+        name="message-text"
+        size={24}
+        color={AppTheme[theme].button}
+        style={styles.icon}
+      />
+        <Text style={[styles.text, styles.info]}>{i18n.t("PUSH_NOTIFICATION")}</Text>
         <Switch
           trackColor={{ false: "#3e3e3e", true: AppTheme[theme].button }}
           thumbColor={isEnabled ? "#2C6BED" : "#f4f3f4"}
@@ -266,6 +289,10 @@ const createStyles = (theme: string) =>
       alignItems: "center",
       color: AppTheme[theme].text,
       justifyContent: "space-between",
+    },
+    info: {
+      flex: 1,
+      paddingLeft: 10,
     },
     separator: {
       height: 0.5,

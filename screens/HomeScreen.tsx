@@ -68,7 +68,9 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
   //const [modal, setModal] = useState({ action: "", value: "", visible: false });
   //store
   const dispatch = useAppDispatch();
-  const { items, updateStateFlag } = useAppSelector((state) => state.parcel);
+  const { items, updateStateFlag, isLoading } = useAppSelector(
+    (state) => state.parcel
+  );
   const { theme, darkmode, language, location } = useAppSelector(
     (state) => state.settings
   );
@@ -88,7 +90,7 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
       headerTitle: () => (
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
           {/* <Avatar rounded source={require("../assets/moto.jpeg")} /> */}
-          <MaterialCommunityIcons name="gift" size={24} color="white" />
+          <MaterialCommunityIcons name="truck-fast-outline" size={35} color="white" />
           <Text
             style={{
               color: "white",
@@ -139,7 +141,6 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
         clearParams();
       }
     } else {
-
     }
     return () => {
       closeEditModal();
@@ -397,6 +398,15 @@ const HomeScreen: React.FC = ({ navigation, route }: HomeProps) => {
         )}
 
         <FlatList
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={fetchData}
+              colors={[AppTheme[theme].button]}
+              tintColor={AppTheme[theme].button}
+            />
+          }
+          style={styles.scrollView}
           data={[...filteredDataSource].sort((a, b) => {
             return a.track_title?.localeCompare(b?.status);
           })}
@@ -579,6 +589,9 @@ const createStyles = (theme: string) =>
       height: 0.5,
       width: "100%",
       backgroundColor: AppTheme[theme].itemSeparator,
+    },
+    scrollView: {
+      minHeight: 100,
     },
   });
 

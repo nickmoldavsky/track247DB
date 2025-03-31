@@ -38,6 +38,24 @@ const LoadingComponent = (props) => {
         <Skeleton style={styles.item} animation={props.animation} width={250} height={50} />
         <Skeleton style={styles.item} animation={props.animation} width={50} height={50} />
       </View>
+
+      <View style={styles.row}>
+        <Skeleton circle width={20} height={20} />
+        <Skeleton style={styles.item} animation={props.animation} width={250} height={50} />
+        <Skeleton style={styles.item} animation={props.animation} width={50} height={50} />
+      </View>
+
+      <View style={styles.row}>
+        <Skeleton circle width={20} height={20} />
+        <Skeleton style={styles.item} animation={props.animation} width={250} height={50} />
+        <Skeleton style={styles.item} animation={props.animation} width={50} height={50} />
+      </View>
+
+      <View style={styles.row}>
+        <Skeleton circle width={20} height={20} />
+        <Skeleton style={styles.item} animation={props.animation} width={250} height={50} />
+        <Skeleton style={styles.item} animation={props.animation} width={50} height={50} />
+      </View>
       
     </View>
   );

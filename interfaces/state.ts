@@ -9,9 +9,8 @@ export interface IParcelState {
 }
 
 export interface IUserState {
-  language: string;
-  location: string;
   uid: string;
+  uname: string;
   isLoading: boolean;
   error: string;
   updateItemsFlag: boolean;
@@ -33,6 +32,6 @@ export interface ISettingsState {
   deviceId: string;
   pushToken: string;
   accessToken: string;
-  loading: boolean;
+  isLoading: boolean;
   error: (boolean | string);
 }

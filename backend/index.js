@@ -33,10 +33,21 @@ const NOTIFICATION_STATUS = " has an update from";
 const PARCEL_DETAILS_ERROR_MESSAGE =
   "No information about your parcel. We checked all relevant couriers for parcel ";
 
+const NOTIFICATION_TITLE_YOUR_PARCEL = {
+  en: 'Your parcel ',
+  ru: 'У вашей посылки ',
+  he: 'Your parcel '
+};
+const NOTIFICATION_TITLE_HAS_UPDATE = {
+  en: ' has an update!',
+  ru: ' есть обновление!',
+  he: ' has an update!'
+};  
+
 const getValidTracks = () => {
   return new Promise((resolve, reject) => {
     connection.query(
-      "SELECT tracks.id, tracks.track_id, tracks.track_title, tracks.delivered, users.push_token AS push_token, tracks.last_status FROM tracks LEFT JOIN users ON users.id = tracks.user_id WHERE users.push_notifications = 1 AND tracks.delivered = 0",
+      "SELECT tracks.id, tracks.track_id, tracks.track_title, tracks.delivered, users.push_token AS push_token, users.language AS language, users.location AS location, tracks.last_status FROM tracks LEFT JOIN users ON users.id = tracks.user_id WHERE users.push_notifications = 1 AND tracks.delivered = 0",
      (error, results) => {
         if (error) {
           return reject(error);
@@ -80,14 +91,15 @@ const poolTrackingStatus = (uuid) => {
 };
 
 const checkTrackingStatus = async (params) => {
+  console.log('checkTrackingStatus params:', params);
   const data = {
     shipments: [
       {
         trackingId: params.trackingId,
-        destinationCountry: "USA",
+        destinationCountry: params.location,
       },
     ],
-    language: "ENG",
+    language: params.language,
     apiKey: EXPO_PUBLIC_API_KEY,
   };
 
@@ -109,7 +121,7 @@ const checkTrackingStatus = async (params) => {
           poolResponse.data
         );
         const poolNotificationParams = {
-          title: "Your parcel " + params.trackingTitle + " has an update!",
+          title: NOTIFICATION_TITLE_YOUR_PARCEL[params.language] + params.trackingTitle + NOTIFICATION_TITLE_HAS_UPDATE[params.language],
           body: poolResponse.data?.shipments[0].lastState.status,
           //lastStatus: params.last_status,
           lastStatus: poolResponse.data?.shipments[0].lastState,
@@ -140,7 +152,7 @@ const checkTrackingStatus = async (params) => {
             JSON.parse(params.lastStatus).status
         ) {
           const notificationParams = {
-            title: "Your parcel " + params.trackingTitle + " has an update!",
+            title: NOTIFICATION_TITLE_YOUR_PARCEL[params.language] + params.trackingTitle + NOTIFICATION_TITLE_HAS_UPDATE[params.language],
             body: response.data?.shipments[0].lastState?.status
               ? response.data?.shipments[0].lastState?.status
               : response.data?.shipments[0].status,
@@ -183,6 +195,8 @@ const generatePushNotifications = async () => {
         //status: tracks[i].status,
         lastStatus: tracks[i].last_status,
         pushToken: tracks[i].push_token,
+        language: tracks[i].language,
+        location: tracks[i].location
       };
       await checkTrackingStatus(params);
       console.log(
@@ -250,6 +264,7 @@ app.get("/", (req, res) => {
 });
 
 ///////////////////////////////////////CRUD//////////////////////////////////
+
 //get items by user uid
 app.get("/api/v2/tracks/:uid", async (req, res) => {
   console.log("get items by user uid");
@@ -258,7 +273,7 @@ app.get("/api/v2/tracks/:uid", async (req, res) => {
     const data = await connection
       .promise()
       .query(
-        `SELECT id, track_id, track_title, status FROM tracks WHERE user_id = ?`,
+        `SELECT id, track_id, track_title, status, last_status FROM tracks WHERE user_id = ?`,
         [uid]
       );
     console.log("index.js/api/v2/tracks/:uid data", data);
@@ -274,6 +289,7 @@ app.get("/api/v2/tracks/:uid", async (req, res) => {
 
 //user login
 app.post("/api/v2/user/login", async (req, res) => {
+  console.log('api/v2/user/login', req);
   try {
     const { email, password } = req.body;
     const data = await connection
@@ -285,7 +301,7 @@ app.post("/api/v2/user/login", async (req, res) => {
     console.log("user:", data);
     if (data[0].length > 0) {
       res.status(200).json({
-        data,
+        data: data[0],
       });
     } else {
       res.status(404).json({
@@ -307,14 +323,16 @@ app.post("/api/v2/user/register", async (req, res) => {
     console.log("index.js/app.post/api/v2/user/register", req.body);
 
     const [{ insertId }] = await connection.promise().query(
-      `INSERT INTO users (device_id, email, password, push_token, push_notifications, created, updated) 
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (device_id, email, password, push_token, push_notifications, language, location, created, updated) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         "123456789",
         email,
         password,
         "",
         0,
+        "en",
+        "israel",
         "2024-08-29 00:00:00",
         "2024-08-29 00:00:00",
       ]
@@ -323,7 +341,7 @@ app.post("/api/v2/user/register", async (req, res) => {
       console.log("/api/v2/add user insertId:", insertId);
     }
     res.status(202).json({
-      data: insertId,
+      data: {id: insertId, email: email},
     });
   } catch (err) {
     console.log("error:", err);
@@ -469,146 +487,62 @@ app.post("/api/v2/updatePushNotificationsFlag", async (req, res) => {
   }
 });
 
-//Push notification
+//update push notification token
+app.post("/api/v2/updatePushNotificationsToken", async (req, res) => {
+  try {
+    const { id, token } = req.body;
+    console.log('update push notification token', id);
+
+    const [{ updatedId }] = await connection
+      .promise()
+      .query('UPDATE users SET ? WHERE id = ?', [{ push_token: token }, id]);
+    if (updatedId) {
+      console.log("/api/v2/updatePushNotificationsToken updated user:", updatedId);
+    }
+    res.status(200).json({
+      data: token,
+    });
+  } catch (err) {
+    console.log("error:", err);
+    res.status(500).json({
+      message: err,
+    });
+  }
+});
+
+//update app language
+app.post("/api/v2/updateAppLanguage", async (req, res) => {
+  try {
+    const { id, language } = req.body;
+    console.log('update updateAppLanguage', id);
+
+    const [{ updatedId }] = await connection
+      .promise()
+      .query('UPDATE users SET ? WHERE id = ?', [{ language: language }, id]);
+    if (updatedId) {
+      console.log("/api/v2/updateAppLanguage:", updatedId);
+    }
+    res.status(200).json({
+      data: language,
+    });
+  } catch (err) {
+    console.log("error:", err);
+    res.status(500).json({
+      message: err,
+    });
+  }
+});
+
+
+//Push notifications test
 app.get("/push/send", (req, res) => {
   generatePushNotifications();
 });
 
-app.get("/api/v2/tracks", (req, res) => {
-  if (connection.state === "disconnected") {
-    connection.connect();
-  }
-  connection.query("SELECT * FROM tracks", (error, results) => {
-    if (error) {
-      console.error("Error getting tracks from database: " + error.stack);
-      return res.status(500).json({ error: "Failed to get tracks.." });
-    }
-
-    // Send a success response
-    res.json({ message: "tracks result", results: results });
-    //connection.end();
-  });
-});
-
-app.get("/api/v2/users", (req, res) => {
-  if (connection.state === "disconnected") {
-    //TODO:
-    //connection.release();
-    // connection.connect().then(() => {
-
-    //});
-    connection.connect((err) => {
-      if (err) {
-        console.error("Error connecting to the database: " + err.stack);
-        return;
-      }
-
-      console.log("Connected to the database as ID " + connection.threadId);
-    });
-    console.log("connection.state:", connection.state);
-  }
-  connection.query("SELECT * FROM users", (error, results) => {
-    if (error) {
-      console.error("Error getting tracks from database: " + error.stack);
-      return res.status(500).json({
-        error: "Failed to get users..",
-        connectionState: connection.state,
-      });
-    }
-
-    // Send a success response
-    res.json({
-      message: "users result",
-      results: results,
-      connectionState: connection.state,
-    });
-
-    //connection.end();
-  });
-});
-
-app.get("/api/v2/trackInfo", async (req, res) => {
-  try {
-    // if get =>/articles/:id
-    //req.params.id
-    if (!req.query.code) {
-      return res.status(500).json({
-        err: "Track code not found!",
-      });
-    }
-    console.log("req", req.query.code);
-    const data = await parseL(req.query.code);
-    return res.status(200).json({
-      result: data,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      err: err.toString(),
-    });
-  }
-});
-
-app.post("/api/v2/signIn", (req, res) => {
-  console.log("receiving data ...", req);
-  console.log("body is ", req.body);
-  //res.send(req.body);
-  const email = req.email;
-  const password = req.password;
-  connection.query("SELECT * FROM users", (error, results) => {
-    if (error) {
-      console.error("Error getting user from database: " + error.stack);
-      return res.status(500).json({ error: "Failed to login.." });
-    }
-
-    // Send a success response
-    return res.status(200).json(results);
-    //connection.end();
-  });
-});
-
-app.post("/api/v2/signUp", (req, res) => {
-  console.log("receiving data ...", req);
-  console.log("body is ", req.body);
-  //res.send(req.body);
-  const email = req.email;
-  const password = req.password;
-  connection.query("SELECT * FROM users", (error, results) => {
-    if (error) {
-      console.error("Error getting tracks from database: " + error.stack);
-      return res.status(500).json({ error: "Failed to login.." });
-    }
-
-    // Send a success response
-    return res.status(200).json(results);
-    //connection.end();
-  });
-});
-
-app.post("/api/v2/getUserData", (req, res) => {
-  console.log("receiving data ...", req);
-  console.log("body is ", req.body.uid);
-  //res.send(req.body);
-  const email = req.email;
-  const password = req.password;
-  connection.query(
-    "SELECT * FROM statistics WHERE user_id=" + req.body.uid,
-    (error, results) => {
-      if (error) {
-        console.error("Error getting tracks from database: " + error.stack);
-        return res
-          .status(500)
-          .json({ error: "Failed to get user statistics." });
-      }
-
-      // Send a success response
-      return res.status(200).json(results);
-      //connection.end();
-    }
-  );
-});
-
+//server started
 app.listen(5000, () => {
   console.log("Server started at 5000");
 });
 
+//cron job
 cron.schedule("0 * * * *", generatePushNotifications);

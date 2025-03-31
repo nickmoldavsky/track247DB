@@ -52,12 +52,11 @@ const DetailsScreen: React.FC = ({ route, navigation }: DetailsScreenProps) => {
   const [parcelInfo, setParcelInfo] = useState<IParcel>();
   const [states, setStates] = useState<IParcel>();
   const [elementVisible, setElementVisible] = useState<boolean>(false);
-  const errorMessage: string =
-    i18n.t("PARCEL_DETAILS_ERROR_MESSAGE") + trackingId;
+  const errorMessage: string = i18n.t("PARCEL_DETAILS_ERROR_MESSAGE") + trackingId;
   const dispatch = useAppDispatch();
-  const { uid } = useAppSelector((state) => state.user);
+  const { uid} = useAppSelector((state) => state.user);
   const { items, isLoading, error } = useAppSelector((state) => state.parcel);
-  const { theme, language, location, pushToken, deviceId } = useAppSelector(
+  const { theme, language, location } = useAppSelector(
     (state) => state.settings
   );
   // Constructing styles for current theme
@@ -193,27 +192,28 @@ const DetailsScreen: React.FC = ({ route, navigation }: DetailsScreenProps) => {
 
   const updateParcelInfo = (responseParcelInfo) => {
     setParcelInfo(responseParcelInfo);
-    console.log('updateParcelInfo responseParcelInfo', responseParcelInfo.status);
-    items.find((item) => {
-      if (item.track_id === responseParcelInfo.trackingId) {
-        console.log("DetailsScreen/updateParcelInfo/item by trackingId:", item);
-        if(item?.status !== responseParcelInfo.status && uid) {
-        //if(item?.lastState?.status !== responseParcelInfo.status && uid) {
-          const requestData = {
-            user_id: uid,
-            track_id: responseParcelInfo.trackingId,
-            status: responseParcelInfo.status,
-            states: responseParcelInfo.states,
-            last_status: responseParcelInfo.lastState,
-          }
-          dispatch(updateParcelInDb(requestData));
-        }
-        // setParcelInfo((prevParcelInfo) => {
-        //   return (prevParcelInfo = item);
-        // });
-
-      }
-    });
+    console.log(
+      "updateParcelInfo responseParcelInfo",
+      responseParcelInfo?.lastState.status
+    );
+    //
+    if (
+      (route.params.trackingLastStatus !==
+        responseParcelInfo?.lastState.status) &&
+      uid
+    ) {
+      const requestData = {
+        user_id: uid,
+        track_id: responseParcelInfo.trackingId,
+        status: responseParcelInfo.status,
+        states: responseParcelInfo.states,
+        last_status: responseParcelInfo.lastState,
+      };
+      dispatch(updateParcelInDb(requestData));
+    }
+    // setParcelInfo((prevParcelInfo) => {
+    //   return (prevParcelInfo = item);
+    // });
   };
 
   return (
@@ -223,8 +223,6 @@ const DetailsScreen: React.FC = ({ route, navigation }: DetailsScreenProps) => {
           <Text style={styles.text}>{errorMessage}</Text>
         </View>
       )}
-
-      {/* {loadingIndicator && <LoadingComponent animation="wave" />} */}
 
       {!error && (
         <View>
@@ -257,7 +255,7 @@ const DetailsScreen: React.FC = ({ route, navigation }: DetailsScreenProps) => {
             </View>
           )}
 
-          {parcelInfo?.status && (
+          {(parcelInfo?.status && !isLoading) && (
             <View style={styles.status}>
               <Text style={styles.statusText}>
                 {!parcelInfo?.status ? "" : i18n.t(parcelInfo?.status)}
@@ -281,15 +279,6 @@ const DetailsScreen: React.FC = ({ route, navigation }: DetailsScreenProps) => {
             </View>
           )}
 
-          <View style={styles.loadingIndicator}>
-            {loadingIndicator && <LoadingComponent animation="wave" />}
-            {/* <ActivityIndicator
-              animating={loadingIndicator}
-              size="small"
-              color={AppTheme[theme].button}
-            />  */}
-          </View>
-
           <ScrollView
             refreshControl={
               <RefreshControl
@@ -302,7 +291,7 @@ const DetailsScreen: React.FC = ({ route, navigation }: DetailsScreenProps) => {
             }
             style={styles.scrollView}
           >
-            {parcelInfo?.states &&
+            {(parcelInfo?.states && !isLoading) &&
               parcelInfo.states.map((state, index) => {
                 return (
                   <ListItem
@@ -338,6 +327,11 @@ const DetailsScreen: React.FC = ({ route, navigation }: DetailsScreenProps) => {
                 );
               })}
           </ScrollView>
+
+          <View style={styles.loadingIndicator}>
+            {loadingIndicator && <LoadingComponent animation="wave" />}
+          </View>
+
         </View>
       )}
     </SafeAreaView>
@@ -379,6 +373,9 @@ const createStyles = (theme: string) =>
       alignItems: "center",
       justifyContent: "center",
     },
+    loadingIndicator: {
+      opacity: 0.1
+    },
     options: {
       position: "absolute",
       bottom: 0,
@@ -416,7 +413,7 @@ const createStyles = (theme: string) =>
     },
     scrollView: {
       //backgroundColor: AppTheme[theme].container,
-      minHeight: 100,
+      minHeight: 50,
     },
     map: {
       width: "100%",

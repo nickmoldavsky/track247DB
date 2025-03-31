@@ -9,7 +9,7 @@ import {
   Pressable,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
-import { setLanguage, setLocation } from "../store/settingsSlice";
+import { setLanguage, setLocation, updateAppLanguage } from "../store/settingsSlice";
 import { AppTheme } from "../styled/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons/";
 import i18n from "../i18n/i18n";
@@ -25,10 +25,15 @@ const LocationScreen: React.FC = ({
   const { theme, darkmode, language, location } = useSelector(
     (state: RootState) => state.settings
   );
+  const { uid } = useSelector(
+    (state: RootState) => state.user
+  );
   const [selectedItem, setSelectedItem] = useState(
     ACTION !== "SET_LOCATION" ? language : location
   );
+
   const styles = useMemo(() => createStyles(theme), [theme]);
+
   const LANGUAGE_DATA = [
     { id: 1, title: "English", value: "en" },
     { id: 2, title: "Russian", value: "ru" },
@@ -71,7 +76,11 @@ const LocationScreen: React.FC = ({
   const setItem = (item: Item) => {
     setSelectedItem(item.value);
     if (ACTION !== "SET_LOCATION") {
-      dispatch(setLanguage(item.value));
+      const data = {
+        id: uid,
+        language: item.value
+      }
+      dispatch(updateAppLanguage(data));
     } else {
       dispatch(setLocation(item.value));
     }

@@ -34,6 +34,8 @@ const RegisterScreen: React.FC = ({ navigation }) => {
   const styles: any = useMemo(() => createStyles(theme), [theme]); //TODO: change any type
   const [inputUsername, setInputUsername] = useState("");
   const [inputPassword, setInputPassword] = useState("");
+  const [validPassword, setValidPassword] = useState(false);
+  const [inputConfirmPassword, setInputConfirmPassword] = useState("");
   const isFocused = useIsFocused();
   const pageTitle = i18n.t("REGISTER");
 
@@ -50,8 +52,22 @@ const RegisterScreen: React.FC = ({ navigation }) => {
     }
   }, [uid]);
 
+  const validateEmail = (text: string) => {
+    console.log(text);
+    let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
+    if (reg.test(text) === false) {
+      setInputUsername(text);
+      setValidPassword(false);
+      return false;
+    }
+    else {
+      setInputUsername(text);
+      setValidPassword(true);
+    }
+  }
+
   const submitForm = () => {
-    if (!inputUsername || !inputPassword) {
+    if (!inputUsername || !inputPassword || !validPassword) {
       input.current?.shake();
       return;
     }
@@ -78,10 +94,10 @@ const RegisterScreen: React.FC = ({ navigation }) => {
             placeholder={i18n.t("USERNAME")}
             leftIcon={{
               type: "font-awesome",
-              name: "barcode",
+              name: "user",
               color: AppTheme[theme].button,
             }}
-            onChangeText={(value) => setInputUsername(value)}
+            onChangeText={(value) => validateEmail(value)}
           />
           <Input
             placeholderTextColor={AppTheme[theme].text}
@@ -90,7 +106,7 @@ const RegisterScreen: React.FC = ({ navigation }) => {
             placeholder={i18n.t("PASSWORD")}
             leftIcon={{
               type: "font-awesome",
-              name: "file-text-o",
+              name: "lock",
               color: AppTheme[theme].button,
             }}
             onChangeText={(value) => setInputPassword(value)}
@@ -98,14 +114,14 @@ const RegisterScreen: React.FC = ({ navigation }) => {
           <Input
             placeholderTextColor={AppTheme[theme].text}
             inputStyle={[styles.formInput]}
-            value={inputPassword}
+            value={inputConfirmPassword}
             placeholder={i18n.t("CONFIRM_PASSWORD")}
             leftIcon={{
               type: "font-awesome",
-              name: "file-text-o",
+              name: "lock",
               color: AppTheme[theme].button,
             }}
-            onChangeText={(value) => setInputPassword(value)}
+            onChangeText={(value) => setInputConfirmPassword(value)}
           />
           <View style={styles.buttonsWrapper}>
             <Button

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "728484310849",
+    "project_id": "track-parcel-24-7",
+    "storage_bucket": "track-parcel-24-7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:728484310849:android:5932314894ae1f28e27bc0",
+        "android_client_info": {
+          "package_name": "com.anonymous.parcelTracking"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZjq5xSRK8q8KRVjvHmPz2e-PwA9idSgs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

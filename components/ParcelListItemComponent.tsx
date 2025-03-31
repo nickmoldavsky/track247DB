@@ -23,10 +23,14 @@ const ParcelListItem: React.FC = ({ item, openEditModal }: Props) => {
   const { theme } = useAppSelector((state) => state.settings);
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  const getItemDetails = ({ track_id, track_title }: IParcel) => {
+  const getItemDetails = (item : IParcel) => {
+    const last_status = (item?.last_status.length) ? JSON.parse(item?.last_status).status : '';
+    console.log('getItemDetails item:', last_status);
     navigate("Details", {
-      trackingNumber: track_id,
-      trackingTitle: track_title,
+      trackingNumber: item.track_id,
+      trackingTitle: item.track_title,
+      trackingStatus: item.status,
+      trackingLastStatus: last_status
     });
   };
 
@@ -76,7 +80,7 @@ const ParcelListItem: React.FC = ({ item, openEditModal }: Props) => {
           {/* <Text style={styles.text}>{i18n.t(item?.status)}</Text> */}
           <Text style={styles.text} numberOfLines={1}>
             {!item.status ? i18n.t("NO_DATA") : ''}
-            {item?.status}
+            {(item?.last_status.length) ? JSON.parse(item.last_status).status : item?.status}
           </Text>
           <Text style={[styles.text, styles.dateTime, styles.opacity]} numberOfLines={1}>
             {DateTimeHelper.getFormattedDatetime(item?.lastState?.date)}

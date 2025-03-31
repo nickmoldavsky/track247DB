@@ -8,9 +8,8 @@ import { IUserState } from "../interfaces/state";
 import axios from "axios";
 
 const initialState: IUserState = {
-  location: "ISRAEL",
-  language: "EN",
   uid: "",
+  uname: "",
   isLoading: false,
   error: "",
   updateItemsFlag: false,
@@ -93,7 +92,9 @@ export const userSlice = createSlice({
     },
     logOut: (state) => {
       state.uid = "";
+      state.uname = "";
       state.error = "";
+      //TODO: reset all state data
     },
   },
   extraReducers: (builder) => {
@@ -103,8 +104,9 @@ export const userSlice = createSlice({
     });
     builder.addCase(userLogin.fulfilled,(state, action) => {
       state.isLoading = false;
-      console.log('userLogin payload', action.payload.data[0][0].id);
-      state.uid = action.payload.data[0][0].id;
+      console.log('userLogin payload', action.payload.data[0].email);
+      state.uid = action.payload.data[0].id;
+      state.uname = action.payload.data[0].email;
     });
     builder.addCase(userLogin.rejected, (state, action) => {
       state.isLoading = false;
@@ -119,8 +121,9 @@ export const userSlice = createSlice({
     });
     builder.addCase(userRegister.fulfilled,(state, action) => {
       state.isLoading = false;
-      console.log('userRegister payload', action.payload);
-      state.uid = action.payload.data;
+      console.log('userRegister payload', action.payload.data);
+      state.uid = action.payload.data.id;
+      state.uname = action.payload.data.email;
     });
     builder.addCase(userRegister.rejected, (state, action) => {
       state.isLoading = false;
@@ -128,6 +131,7 @@ export const userSlice = createSlice({
       //state.error = action.error.message;
       state.error = action.payload;
     });
+
   },
 });
 

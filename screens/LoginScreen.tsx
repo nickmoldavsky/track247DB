@@ -31,15 +31,16 @@ import { color } from "@rneui/base";
 
 const LoginScreen: React.FC = ({ navigation }) => {
   const dispatch = useAppDispatch();
-  const { uid, error } = useAppSelector((state) => state.user);
+  const { uid, error, isLoading } = useAppSelector((state) => state.user);
   const { theme, language } = useAppSelector(
     (state: RootState) => state.settings
   );
   i18n.locale = language;
   const input = useRef<TextInput>();
-  const styles: any = useMemo(() => createStyles(theme), [theme]); //TODO: change any type
+  const styles: any = useMemo(() => createStyles(theme), [theme]); //TODO: change type 'any'
   const [inputUsername, setInputUsername] = useState("");
   const [inputPassword, setInputPassword] = useState("");
+  const [validPassword, setValidPassword] = useState(false);
   const isFocused = useIsFocused();
   const pageTitle = i18n.t("LOGIN");
 
@@ -57,8 +58,22 @@ const LoginScreen: React.FC = ({ navigation }) => {
     }
   }, [uid]);
 
+  const validateEmail = (text: string) => {
+    console.log(text);
+    let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
+    if (reg.test(text) === false) {
+      setInputUsername(text);
+      setValidPassword(false);
+      return false;
+    }
+    else {
+      setInputUsername(text);
+      setValidPassword(true);
+    }
+  }
+
   const submitForm = () => {
-    if (!inputUsername || !inputPassword) {
+    if (!inputUsername || !inputPassword || !validPassword) {
       input.current?.shake();
       return;
     }
@@ -80,15 +95,17 @@ const LoginScreen: React.FC = ({ navigation }) => {
           <Input
             ref={input}
             placeholderTextColor={AppTheme[theme].text}
+            //errorStyle={{ color: 'red' }}
+            //errorMessage='ENTER A VALID EMAIL'
             inputStyle={[styles.formInput]}
             value={inputUsername}
             placeholder={i18n.t("USERNAME")}
             leftIcon={{
               type: "font-awesome",
-              name: "barcode",
+              name: "user",
               color: AppTheme[theme].button,
             }}
-            onChangeText={(value) => setInputUsername(value)}
+            onChangeText={(value) => validateEmail(value)}
           />
           <Input
             placeholderTextColor={AppTheme[theme].text}
@@ -97,10 +114,11 @@ const LoginScreen: React.FC = ({ navigation }) => {
             placeholder={i18n.t("PASSWORD")}
             leftIcon={{
               type: "font-awesome",
-              name: "file-text-o",
+              name: "lock",
               color: AppTheme[theme].button,
             }}
             onChangeText={(value) => setInputPassword(value)}
+            secureTextEntry={true}
           />
           {/* <View style={styles.forgotPasswordlink}>
             <TouchableOpacity onPress={() => navigation.navigate("Register")}>
@@ -109,7 +127,7 @@ const LoginScreen: React.FC = ({ navigation }) => {
           </View> */}
           <View style={styles.buttonsWrapper}>
             <Button
-              //disabled={!inputUserName}
+              disabled={isLoading}
               buttonStyle={{
                 width: 200,
                 backgroundColor: AppTheme[theme].button,
@@ -121,7 +139,7 @@ const LoginScreen: React.FC = ({ navigation }) => {
           </View>
           <View style={styles.buttonsWrapper}>
             <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text style={styles.registerLink}>Don't have an account?</Text>
+              <Text style={styles.registerLink}>{i18n.t("DONT_HAVE_AN_ACCOUNT")}</Text>
             </TouchableOpacity>
           </View>
         </View>

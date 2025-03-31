@@ -454,11 +454,11 @@ export const parcelSlice = createSlice({
     builder.addCase(getTracksByUserId.fulfilled, (state, action) => {
       console.log(
         "builder.addCase(getTracksByUserId.fulfilled",
-        action.payload
+        action.payload.tracks[0]
       );
       state.isLoading = false;
       //TODO check why array inside array [[]]
-      state.items = action.payload.tracks[0];
+      //state.items = action.payload.tracks[0];
     });
     builder.addCase(getTracksByUserId.rejected, (state, action) => {
       state.isLoading = false;

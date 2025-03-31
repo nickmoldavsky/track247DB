@@ -15,7 +15,11 @@ import * as Localization from "expo-localization";
 import i18n from "../i18n/i18n";
 //store
 import { useSelector, useDispatch } from "react-redux";
-import { setDarkTheme, setDefaultTheme } from "../store/settingsSlice";
+import {
+  resetSettings,
+  setDarkTheme,
+  setDefaultTheme,
+} from "../store/settingsSlice";
 //components
 import NotificationsComponent from "../components/NotificationsComponent";
 //theme
@@ -35,11 +39,9 @@ import { useIsFocused } from "@react-navigation/native";
 const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
   const version = Constants.expoConfig.version;
   const dispatch = useDispatch();
-  const { theme, colors, darkmode, language, location, pushToken, deviceId } = useSelector(
-    (state: RootState) => state.settings
-  );
-  const { uid } = useSelector((state: RootState) => state.user
-  );
+  const { theme, colors, darkmode, language, location, pushToken, deviceId } =
+    useSelector((state: RootState) => state.settings);
+  const { uid, uname } = useSelector((state: RootState) => state.user);
   const user = uid;
   const Container = styled.View`
     background-color: ${darkmode ? "#000" : "#fff"};
@@ -77,7 +79,7 @@ const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
   }, [language, theme]);
 
   useEffect(() => {
-    if(!uid) {
+    if (!uid) {
       navigation.navigate("Login");
     }
   }, [isFocused]);
@@ -88,11 +90,13 @@ const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
       id: "1",
       title: i18n.t("APP_LANGUAGE"),
       onPress: { action: "SET_LANGUAGE" },
+      icon: "earth",
     },
     {
       id: "2",
       title: i18n.t("DESTINATION_COUNTRY"),
       onPress: { action: "SET_LOCATION" },
+      icon: "greenhouse",
     },
     {
       id: "3",
@@ -100,6 +104,7 @@ const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
       value: "darkThemeIsEnabled",
       onValueChange: "switchTheme",
       switch: true,
+      icon: "theme-light-dark",
     },
     {
       id: "4",
@@ -107,11 +112,13 @@ const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
       value: "archiveParcelIsEnabled",
       onValueChange: "switchArchive",
       switch: true,
+      icon: "archive",
     },
     {
       id: "5",
-      title: uid + ' ' + i18n.t("LOGOUT"),
+      title: uname,
       onPress: { action: "LOGOUT" },
+      icon: "account",
     },
   ];
 
@@ -138,9 +145,10 @@ const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
   };
 
   const onPressFunc = (action: string) => {
-    if(action === "LOGOUT") {
-      dispatch(logOut());
+    if (action === "LOGOUT") {
       dispatch(resetItems());
+      dispatch(resetSettings());
+      dispatch(logOut());
     } else {
       navigation.navigate("Location", {
         action: action,
@@ -172,7 +180,13 @@ const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
 
   const SwitchItem = ({ item, value, onValueChange_ }) => (
     <View style={[styles.item]}>
-      <Text style={styles.text}>{item.title}</Text>
+      <MaterialCommunityIcons
+        name={item.icon}
+        size={24}
+        color={AppTheme[theme].button}
+        style={styles.icon}
+      />
+      <Text style={[styles.text, styles.info]}>{item.title}</Text>
       <Switch
         style={styles.switch}
         trackColor={{ false: "#3e3e3e", true: AppTheme[theme].button }}
@@ -190,10 +204,19 @@ const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
       style={[styles.item, backgroundColor]}
       //disabled={}
     >
-      <Text style={[styles.title, textColor]}>{item.title}</Text>
+      <MaterialCommunityIcons
+        name={item.icon}
+        size={24}
+        color={AppTheme[theme].button}
+        style={styles.icon}
+      />
+
+      <View style={styles.info}>
+        <Text style={[styles.title, textColor]}>{item.title}</Text>
+      </View>
 
       <MaterialCommunityIcons
-        name="chevron-right"
+        name={item.id === '5' ? 'logout' : 'chevron-right'}
         size={24}
         color={AppTheme[theme].button}
         style={styles.icon}
@@ -242,6 +265,10 @@ const SettingsScreen: React.FC = ({ navigation }: SettingsScreenProps) => {
         //extraData={selectedId}
       />
       <View style={styles.version}>
+        <Text style={styles.text}>
+          {pushToken}
+          {uid}
+        </Text>
         <Text style={styles.text}>Version: {version}</Text>
       </View>
     </SafeAreaView>
@@ -279,13 +306,17 @@ const createStyles = (theme: string) =>
       padding: 10,
       minHeight: 65,
       backgroundColor: AppTheme[theme].container,
+
       flexDirection: "row",
-      borderRadius: 5,
-      justifyContent: "space-between",
+
       alignItems: "center",
     },
     title: {},
     icon: {},
+    info: {
+      flex: 1,
+      paddingLeft: 10,
+    },
     separator: {
       height: 0.5,
       width: "100%",
@@ -293,7 +324,7 @@ const createStyles = (theme: string) =>
     },
     version: {
       alignItems: "center",
-    }
+    },
   });
 
 export default SettingsScreen;
